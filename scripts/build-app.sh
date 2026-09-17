@@ -3,7 +3,7 @@
 set -eu
 
 project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-app_dir="$project_dir/dist/GPT Usage Menu.app"
+app_dir="$project_dir/dist/GPTquote.app"
 contents_dir="$app_dir/Contents"
 build_dir="$project_dir/.build/manual-release"
 module_cache="$project_dir/.build/clang-cache"

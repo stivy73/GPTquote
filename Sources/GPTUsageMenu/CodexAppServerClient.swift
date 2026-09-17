@@ -57,7 +57,7 @@ final class CodexAppServerClient {
                     params: [
                         "clientInfo": [
                             "name": "gpt_usage_menu",
-                            "title": "GPT Usage Menu",
+                            "title": "GPTquote",
                             "version": "0.1.0"
                         ]
                     ]

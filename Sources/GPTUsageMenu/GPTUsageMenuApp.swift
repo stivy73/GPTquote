@@ -63,7 +63,7 @@ private struct UsageMenuView: View {
     private var header: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Utilizzo GPT")
+                Text("GPTquote")
                     .font(.headline)
                 if let account = store.account, !account.subtitle.isEmpty {
                     Text(account.subtitle)

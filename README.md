@@ -1,4 +1,4 @@
-# GPT Usage Menu
+# GPTquote
 
 Piccola app macOS da barra menu che mostra le quote rimanenti restituite dal Codex App Server ufficiale.
 
@@ -12,7 +12,7 @@ Piccola app macOS da barra menu che mostra le quote rimanenti restituite dal Cod
 
 ```sh
 ./scripts/build-app.sh
-open "dist/GPT Usage Menu.app"
+open "dist/GPTquote.app"
 ```
 
 Per verificare il parsing delle finestre di utilizzo:
@@ -21,7 +21,7 @@ Per verificare il parsing delle finestre di utilizzo:
 ./scripts/test.sh
 ```
 
-Al primo avvio seleziona **Accedi con ChatGPT**. Il browser completa il flusso ufficiale e Codex conserva la credenziale nel Portachiavi macOS. L’app usa una propria cartella Codex in `~/Library/Application Support/GPT Usage Menu/Codex`, separata da quella dell’app ChatGPT.
+Al primo avvio seleziona **Accedi con ChatGPT**. Il browser completa il flusso ufficiale e Codex conserva la credenziale nel Portachiavi macOS. L’app usa una propria cartella Codex separata da quella dell’app ChatGPT. Per compatibilità con le installazioni precedenti, il percorso interno rimane `~/Library/Application Support/GPT Usage Menu/Codex`.
 
 Le quote vengono aggiornate ogni cinque minuti, all’avvio e su richiesta. La percentuale nella barra indica la quota primaria `codex`; il pannello mostra anche eventuali finestre o modelli aggiuntivi restituiti dall’account.
 
