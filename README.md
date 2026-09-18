@@ -41,3 +41,9 @@ Non usa chiavi API, cookie del browser o endpoint ChatGPT privati.
 GPTquote è sviluppata da **Michele Stival** per **Archetipi Digitali**.
 
 - Sito: [archetipi-digitali.it](https://www.archetipi-digitali.it)
+
+## Licenza
+
+Il codice sorgente è distribuito con licenza [Apache License 2.0](LICENSE).
+I loghi e gli altri materiali di branding in `AppResources` sono esclusi
+dalla licenza del codice; per i dettagli vedere [NOTICE](NOTICE).
