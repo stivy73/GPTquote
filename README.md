@@ -25,6 +25,8 @@ Al primo avvio seleziona **Accedi con ChatGPT**. Il browser completa il flusso u
 
 Le quote vengono aggiornate ogni cinque minuti, all’avvio e su richiesta. La percentuale nella barra indica la quota primaria `codex`; il pannello mostra anche eventuali finestre o modelli aggiuntivi restituiti dall’account.
 
+Dal pulsante con i cursori nel pannello puoi scegliere l’indicatore della barra menu: percentuale precisa oppure una lancetta. La lancetta può usare le soglie verde, giallo e rosso oppure una tinta monocromatica.
+
 ## Sorgente dati
 
 L’app avvia localmente `codex app-server` tramite `stdio`, esegue l’handshake JSONL ufficiale e usa:

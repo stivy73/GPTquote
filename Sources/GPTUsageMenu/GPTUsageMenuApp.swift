@@ -1,6 +1,16 @@
 import AppKit
 import SwiftUI
 
+private enum MenuBarIndicatorStyle: String {
+    case percentage
+    case gauge
+}
+
+private enum GaugeColorMode: String {
+    case trafficLight
+    case monochrome
+}
+
 private enum MenuBarChatGPTIcon {
     static let image: NSImage = {
         let fallback = NSImage(systemSymbolName: "circle.hexagongrid", accessibilityDescription: "ChatGPT")!
@@ -21,6 +31,90 @@ private enum MenuBarChatGPTIcon {
     }()
 }
 
+private enum MenuBarGaugeIcon {
+    static func image(remainingPercent: Double?, colorMode: GaugeColorMode) -> NSImage {
+        guard let remainingPercent else {
+            let fallback = NSImage(systemSymbolName: "ellipsis", accessibilityDescription: "Utilizzo non disponibile")!
+            fallback.isTemplate = true
+            return fallback
+        }
+
+        let size = NSSize(width: 22, height: 22)
+        let image = NSImage(size: size)
+        image.lockFocus()
+
+        guard let context = NSGraphicsContext.current?.cgContext else {
+            image.unlockFocus()
+            return image
+        }
+
+        let center = CGPoint(x: 11, y: 10)
+        let radius: CGFloat = 8
+        let lineWidth: CGFloat = 2.3
+        let lower = Double.pi
+        let upper = 0.0
+
+        context.setLineCap(.round)
+        context.setLineWidth(lineWidth)
+
+        if colorMode == .trafficLight {
+            drawArc(context, center: center, radius: radius, start: lower, end: 2 * .pi / 3, color: .systemRed)
+            drawArc(context, center: center, radius: radius, start: 2 * .pi / 3 - 0.06, end: .pi / 3, color: .systemYellow)
+            drawArc(context, center: center, radius: radius, start: .pi / 3 - 0.06, end: upper, color: .systemGreen)
+        } else {
+            drawArc(context, center: center, radius: radius, start: lower, end: upper, color: .labelColor)
+        }
+
+        let value = min(100, max(0, remainingPercent)) / 100
+        let angle = lower + (upper - lower) * value
+        let needleLength = radius - 2.5
+        let endpoint = CGPoint(
+            x: center.x + cos(angle) * needleLength,
+            y: center.y + sin(angle) * needleLength
+        )
+        let needleColor = colorMode == .trafficLight ? statusColor(for: remainingPercent) : .labelColor
+
+        context.setStrokeColor(needleColor.cgColor)
+        context.setLineWidth(1.8)
+        context.move(to: center)
+        context.addLine(to: endpoint)
+        context.strokePath()
+        context.setFillColor(needleColor.cgColor)
+        context.fillEllipse(in: CGRect(x: center.x - 1.8, y: center.y - 1.8, width: 3.6, height: 3.6))
+
+        image.unlockFocus()
+        image.isTemplate = colorMode == .monochrome
+        return image
+    }
+
+    private static func drawArc(
+        _ context: CGContext,
+        center: CGPoint,
+        radius: CGFloat,
+        start: Double,
+        end: Double,
+        color: NSColor
+    ) {
+        context.setStrokeColor(color.cgColor)
+        context.addArc(
+            center: center,
+            radius: radius,
+            startAngle: CGFloat(start),
+            endAngle: CGFloat(end),
+            clockwise: true
+        )
+        context.strokePath()
+    }
+
+    private static func statusColor(for remainingPercent: Double) -> NSColor {
+        switch remainingPercent {
+        case 0..<20: return .systemRed
+        case 20..<50: return .systemYellow
+        default: return .systemGreen
+        }
+    }
+}
+
 private enum ArchetipiDigitaliLogo {
     static let image: NSImage = {
         let fallback = NSImage(systemSymbolName: "building.2", accessibilityDescription: "Archetipi Digitali")!
@@ -37,6 +131,8 @@ private enum ArchetipiDigitaliLogo {
 @main
 struct GPTUsageMenuApp: App {
     @StateObject private var store = UsageStore()
+    @AppStorage("menuBarIndicatorStyle") private var menuBarIndicatorStyle = MenuBarIndicatorStyle.percentage.rawValue
+    @AppStorage("menuBarGaugeColorMode") private var menuBarGaugeColorMode = GaugeColorMode.trafficLight.rawValue
 
     var body: some Scene {
         MenuBarExtra {
@@ -46,17 +142,35 @@ struct GPTUsageMenuApp: App {
             HStack(spacing: 3) {
                 Image(nsImage: MenuBarChatGPTIcon.image)
                     .renderingMode(.template)
-                Text(store.menuBarPercentText)
-                    .monospacedDigit()
+                if indicatorStyle == .percentage {
+                    Text(store.menuBarPercentText)
+                        .monospacedDigit()
+                } else {
+                    Image(nsImage: MenuBarGaugeIcon.image(
+                        remainingPercent: store.preferredWindow?.remainingPercent,
+                        colorMode: gaugeColorMode
+                    ))
+                    .renderingMode(gaugeColorMode == .monochrome ? .template : .original)
+                }
             }
             .accessibilityLabel(store.menuBarTitle)
         }
         .menuBarExtraStyle(.window)
     }
+
+    private var indicatorStyle: MenuBarIndicatorStyle {
+        MenuBarIndicatorStyle(rawValue: menuBarIndicatorStyle) ?? .percentage
+    }
+
+    private var gaugeColorMode: GaugeColorMode {
+        GaugeColorMode(rawValue: menuBarGaugeColorMode) ?? .trafficLight
+    }
 }
 
 private struct UsageMenuView: View {
     @ObservedObject var store: UsageStore
+    @AppStorage("menuBarIndicatorStyle") private var menuBarIndicatorStyle = MenuBarIndicatorStyle.percentage.rawValue
+    @AppStorage("menuBarGaugeColorMode") private var menuBarGaugeColorMode = GaugeColorMode.trafficLight.rawValue
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -187,12 +301,36 @@ private struct UsageMenuView: View {
             .disabled(store.account == nil || store.isRefreshing)
             .help("Aggiorna")
 
+            Menu {
+                Picker("Nel menu", selection: $menuBarIndicatorStyle) {
+                    Text("Percentuale precisa").tag(MenuBarIndicatorStyle.percentage.rawValue)
+                    Text("Lancetta").tag(MenuBarIndicatorStyle.gauge.rawValue)
+                }
+
+                if indicatorStyle == .gauge {
+                    Divider()
+
+                    Picker("Colori lancetta", selection: $menuBarGaugeColorMode) {
+                        Text("Verde, giallo, rosso").tag(GaugeColorMode.trafficLight.rawValue)
+                        Text("Monocromatica").tag(GaugeColorMode.monochrome.rawValue)
+                    }
+                }
+            } label: {
+                Image(systemName: "slider.horizontal.3")
+            }
+            .menuStyle(.borderlessButton)
+            .help("Aspetto dell’indicatore nel menu")
+
             Button("Esci") {
                 NSApplication.shared.terminate(nil)
             }
             .buttonStyle(.plain)
         }
         .font(.caption)
+    }
+
+    private var indicatorStyle: MenuBarIndicatorStyle {
+        MenuBarIndicatorStyle(rawValue: menuBarIndicatorStyle) ?? .percentage
     }
 
     private func statusRow(text: String, showsProgress: Bool) -> some View {
