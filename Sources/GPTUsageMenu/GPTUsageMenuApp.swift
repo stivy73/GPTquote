@@ -53,51 +53,45 @@ private enum MenuBarGaugeIcon {
             return fallback
         }
 
-        let size = NSSize(width: 22, height: 22)
-        let image = NSImage(size: size)
-        image.lockFocus()
+        let size = NSSize(width: 24, height: 20)
+        let image = NSImage(size: size, flipped: false) { _ in
+            guard let context = NSGraphicsContext.current?.cgContext else { return false }
 
-        guard let context = NSGraphicsContext.current?.cgContext else {
-            image.unlockFocus()
-            return image
+            let center = CGPoint(x: 12, y: 5)
+            let radius: CGFloat = 9
+            let lower = Double.pi
+            let upper = 0.0
+
+            context.setLineCap(.round)
+            context.setLineWidth(2.5)
+
+            if colorMode == .trafficLight {
+                drawArc(context, center: center, radius: radius, start: lower, end: 2 * .pi / 3, color: .systemRed)
+                drawArc(context, center: center, radius: radius, start: 2 * .pi / 3 - 0.06, end: .pi / 3, color: .systemYellow)
+                drawArc(context, center: center, radius: radius, start: .pi / 3 - 0.06, end: upper, color: .systemGreen)
+            } else {
+                drawArc(context, center: center, radius: radius, start: lower, end: upper, color: .labelColor)
+            }
+
+            // 0% sits at the left end of the dial; 100% sits at the right end.
+            let value = min(100, max(0, remainingPercent)) / 100
+            let angle = lower + (upper - lower) * value
+            let needleLength = radius - 2
+            let endpoint = CGPoint(
+                x: center.x + cos(angle) * needleLength,
+                y: center.y + sin(angle) * needleLength
+            )
+            let needleColor = colorMode == .trafficLight ? UsageIndicatorColor.nsColor(for: remainingPercent) : .labelColor
+
+            context.setStrokeColor(needleColor.cgColor)
+            context.setLineWidth(2)
+            context.move(to: center)
+            context.addLine(to: endpoint)
+            context.strokePath()
+            context.setFillColor(needleColor.cgColor)
+            context.fillEllipse(in: CGRect(x: center.x - 2, y: center.y - 2, width: 4, height: 4))
+            return true
         }
-
-        let center = CGPoint(x: 11, y: 10)
-        let radius: CGFloat = 8
-        let lineWidth: CGFloat = 2.3
-        // 0% sits at the left end of the dial; 100% sits at the right end.
-        let lower = Double.pi
-        let upper = 0.0
-
-        context.setLineCap(.round)
-        context.setLineWidth(lineWidth)
-
-        if colorMode == .trafficLight {
-            drawArc(context, center: center, radius: radius, start: lower, end: 2 * .pi / 3, color: .systemRed)
-            drawArc(context, center: center, radius: radius, start: 2 * .pi / 3 - 0.06, end: .pi / 3, color: .systemYellow)
-            drawArc(context, center: center, radius: radius, start: .pi / 3 - 0.06, end: upper, color: .systemGreen)
-        } else {
-            drawArc(context, center: center, radius: radius, start: lower, end: upper, color: .labelColor)
-        }
-
-        let value = min(100, max(0, remainingPercent)) / 100
-        let angle = lower + (upper - lower) * value
-        let needleLength = radius - 2.5
-        let endpoint = CGPoint(
-            x: center.x + cos(angle) * needleLength,
-            y: center.y + sin(angle) * needleLength
-        )
-        let needleColor = colorMode == .trafficLight ? UsageIndicatorColor.nsColor(for: remainingPercent) : .labelColor
-
-        context.setStrokeColor(needleColor.cgColor)
-        context.setLineWidth(1.8)
-        context.move(to: center)
-        context.addLine(to: endpoint)
-        context.strokePath()
-        context.setFillColor(needleColor.cgColor)
-        context.fillEllipse(in: CGRect(x: center.x - 1.8, y: center.y - 1.8, width: 3.6, height: 3.6))
-
-        image.unlockFocus()
         image.isTemplate = colorMode == .monochrome
         return image
     }
@@ -121,6 +115,28 @@ private enum MenuBarGaugeIcon {
         context.strokePath()
     }
 
+}
+
+private enum MenuBarPercentIcon {
+    static func image(text: String, remainingPercent: Double) -> NSImage {
+        let font = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: UsageIndicatorColor.nsColor(for: remainingPercent)
+        ]
+        let textSize = (text as NSString).size(withAttributes: attributes)
+        let size = NSSize(width: ceil(textSize.width), height: 20)
+        let image = NSImage(size: size, flipped: false) { rect in
+            let origin = NSPoint(
+                x: 0,
+                y: floor((rect.height - textSize.height) / 2) + 1
+            )
+            (text as NSString).draw(at: origin, withAttributes: attributes)
+            return true
+        }
+        image.isTemplate = false
+        return image
+    }
 }
 
 private enum ArchetipiDigitaliLogo {
@@ -151,15 +167,26 @@ struct GPTUsageMenuApp: App {
                 Image(nsImage: MenuBarChatGPTIcon.image)
                     .renderingMode(.template)
                 if indicatorStyle == .percentage {
-                    Text(store.menuBarPercentText)
-                        .monospacedDigit()
-                        .foregroundStyle(menuBarPercentColor)
+                    if gaugeColorMode == .trafficLight,
+                       let remainingPercent = store.preferredWindow?.remainingPercent {
+                        Image(nsImage: MenuBarPercentIcon.image(
+                            text: store.menuBarPercentText,
+                            remainingPercent: remainingPercent
+                        ))
+                        .renderingMode(.original)
+                    } else {
+                        Text(store.menuBarPercentText)
+                            .monospacedDigit()
+                    }
                 } else {
                     Image(nsImage: MenuBarGaugeIcon.image(
                         remainingPercent: store.preferredWindow?.remainingPercent,
                         colorMode: gaugeColorMode
                     ))
                     .renderingMode(gaugeColorMode == .monochrome ? .template : .original)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 20)
                 }
             }
             .accessibilityLabel(store.menuBarTitle)
@@ -175,15 +202,6 @@ struct GPTUsageMenuApp: App {
         GaugeColorMode(rawValue: menuBarGaugeColorMode) ?? .trafficLight
     }
 
-    private var menuBarPercentColor: Color {
-        guard
-            gaugeColorMode == .trafficLight,
-            let remainingPercent = store.preferredWindow?.remainingPercent
-        else {
-            return .primary
-        }
-        return UsageIndicatorColor.swiftUIColor(for: remainingPercent)
-    }
 }
 
 private struct UsageMenuView: View {
