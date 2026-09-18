@@ -182,6 +182,8 @@ private struct UsageMenuView: View {
 
             Divider()
 
+            indicatorSettings
+
             footer
         }
         .padding(16)
@@ -301,26 +303,6 @@ private struct UsageMenuView: View {
             .disabled(store.account == nil || store.isRefreshing)
             .help("Aggiorna")
 
-            Menu {
-                Picker("Nel menu", selection: $menuBarIndicatorStyle) {
-                    Text("Percentuale precisa").tag(MenuBarIndicatorStyle.percentage.rawValue)
-                    Text("Lancetta").tag(MenuBarIndicatorStyle.gauge.rawValue)
-                }
-
-                if indicatorStyle == .gauge {
-                    Divider()
-
-                    Picker("Colori lancetta", selection: $menuBarGaugeColorMode) {
-                        Text("Verde, giallo, rosso").tag(GaugeColorMode.trafficLight.rawValue)
-                        Text("Monocromatica").tag(GaugeColorMode.monochrome.rawValue)
-                    }
-                }
-            } label: {
-                Image(systemName: "slider.horizontal.3")
-            }
-            .menuStyle(.borderlessButton)
-            .help("Aspetto dell’indicatore nel menu")
-
             Button("Esci") {
                 NSApplication.shared.terminate(nil)
             }
@@ -329,8 +311,40 @@ private struct UsageMenuView: View {
         .font(.caption)
     }
 
+    private var indicatorSettings: some View {
+        HStack(spacing: 18) {
+            Toggle("Lancetta", isOn: showsGauge)
+                .toggleStyle(.switch)
+                .controlSize(.small)
+
+            if indicatorStyle == .gauge {
+                Toggle("Colori", isOn: showsGaugeColors)
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+            }
+
+            Spacer()
+        }
+        .font(.caption)
+        .animation(.default, value: indicatorStyle)
+    }
+
     private var indicatorStyle: MenuBarIndicatorStyle {
         MenuBarIndicatorStyle(rawValue: menuBarIndicatorStyle) ?? .percentage
+    }
+
+    private var showsGauge: Binding<Bool> {
+        Binding(
+            get: { indicatorStyle == .gauge },
+            set: { menuBarIndicatorStyle = $0 ? MenuBarIndicatorStyle.gauge.rawValue : MenuBarIndicatorStyle.percentage.rawValue }
+        )
+    }
+
+    private var showsGaugeColors: Binding<Bool> {
+        Binding(
+            get: { GaugeColorMode(rawValue: menuBarGaugeColorMode) != .monochrome },
+            set: { menuBarGaugeColorMode = $0 ? GaugeColorMode.trafficLight.rawValue : GaugeColorMode.monochrome.rawValue }
+        )
     }
 
     private func statusRow(text: String, showsProgress: Bool) -> some View {
