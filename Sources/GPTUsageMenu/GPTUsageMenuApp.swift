@@ -65,13 +65,10 @@ private enum MenuBarGaugeIcon {
             context.setLineCap(.round)
             context.setLineWidth(2.5)
 
-            if colorMode == .trafficLight {
-                drawArc(context, center: center, radius: radius, start: lower, end: 2 * .pi / 3, color: .systemRed)
-                drawArc(context, center: center, radius: radius, start: 2 * .pi / 3 - 0.06, end: .pi / 3, color: .systemYellow)
-                drawArc(context, center: center, radius: radius, start: .pi / 3 - 0.06, end: upper, color: .systemGreen)
-            } else {
-                drawArc(context, center: center, radius: radius, start: lower, end: upper, color: .labelColor)
-            }
+            let indicatorColor = colorMode == .trafficLight
+                ? UsageIndicatorColor.nsColor(for: remainingPercent)
+                : .labelColor
+            drawArc(context, center: center, radius: radius, start: lower, end: upper, color: indicatorColor)
 
             // 0% sits at the left end of the dial; 100% sits at the right end.
             let value = min(100, max(0, remainingPercent)) / 100
@@ -81,14 +78,12 @@ private enum MenuBarGaugeIcon {
                 x: center.x + cos(angle) * needleLength,
                 y: center.y + sin(angle) * needleLength
             )
-            let needleColor = colorMode == .trafficLight ? UsageIndicatorColor.nsColor(for: remainingPercent) : .labelColor
-
-            context.setStrokeColor(needleColor.cgColor)
+            context.setStrokeColor(indicatorColor.cgColor)
             context.setLineWidth(2)
             context.move(to: center)
             context.addLine(to: endpoint)
             context.strokePath()
-            context.setFillColor(needleColor.cgColor)
+            context.setFillColor(indicatorColor.cgColor)
             context.fillEllipse(in: CGRect(x: center.x - 2, y: center.y - 2, width: 4, height: 4))
             return true
         }
