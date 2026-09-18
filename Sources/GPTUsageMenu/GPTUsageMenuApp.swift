@@ -21,6 +21,19 @@ private enum MenuBarChatGPTIcon {
     }()
 }
 
+private enum ArchetipiDigitaliLogo {
+    static let image: NSImage = {
+        let fallback = NSImage(systemSymbolName: "building.2", accessibilityDescription: "Archetipi Digitali")!
+        guard
+            let url = Bundle.main.url(forResource: "ArchetipiDigitaliLogo", withExtension: "png"),
+            let image = NSImage(contentsOf: url)
+        else {
+            return fallback
+        }
+        return image
+    }()
+}
+
 @main
 struct GPTUsageMenuApp: App {
     @StateObject private var store = UsageStore()
@@ -79,9 +92,21 @@ private struct UsageMenuView: View {
 
             Spacer()
 
-            if store.isRefreshing {
-                ProgressView()
-                    .controlSize(.small)
+            HStack(spacing: 10) {
+                Link(destination: URL(string: "https://www.archetipi-digitali.it")!) {
+                    Image(nsImage: ArchetipiDigitaliLogo.image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 112, height: 46)
+                }
+                .buttonStyle(.plain)
+                .help("Visita archetipi-digitali.it")
+                .accessibilityLabel("Visita il sito Archetipi Digitali")
+
+                if store.isRefreshing {
+                    ProgressView()
+                        .controlSize(.small)
+                }
             }
         }
     }

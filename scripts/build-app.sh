@@ -39,6 +39,7 @@ mkdir -p "$contents_dir/MacOS" "$contents_dir/Resources"
 cp "$build_dir/GPTUsageMenu" "$contents_dir/MacOS/GPTUsageMenu"
 cp "$project_dir/AppResources/Info.plist" "$contents_dir/Info.plist"
 cp "$project_dir/AppResources/MenuBarChatGPT.png" "$contents_dir/Resources/MenuBarChatGPT.png"
+cp "$project_dir/AppResources/ArchetipiDigitaliLogo.png" "$contents_dir/Resources/ArchetipiDigitaliLogo.png"
 
 mkdir -p "$iconset_dir"
 sips -z 16 16 "$project_dir/AppResources/AppIcon.png" --out "$iconset_dir/icon_16x16.png" >/dev/null
