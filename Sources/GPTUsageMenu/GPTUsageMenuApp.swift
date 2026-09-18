@@ -11,6 +11,20 @@ private enum GaugeColorMode: String {
     case monochrome
 }
 
+private enum UsageIndicatorColor {
+    static func nsColor(for remainingPercent: Double) -> NSColor {
+        switch remainingPercent {
+        case ..<34: return .systemRed
+        case ..<67: return .systemYellow
+        default: return .systemGreen
+        }
+    }
+
+    static func swiftUIColor(for remainingPercent: Double) -> Color {
+        Color(nsColor: nsColor(for: remainingPercent))
+    }
+}
+
 private enum MenuBarChatGPTIcon {
     static let image: NSImage = {
         let fallback = NSImage(systemSymbolName: "circle.hexagongrid", accessibilityDescription: "ChatGPT")!
@@ -51,6 +65,7 @@ private enum MenuBarGaugeIcon {
         let center = CGPoint(x: 11, y: 10)
         let radius: CGFloat = 8
         let lineWidth: CGFloat = 2.3
+        // 0% sits at the left end of the dial; 100% sits at the right end.
         let lower = Double.pi
         let upper = 0.0
 
@@ -72,7 +87,7 @@ private enum MenuBarGaugeIcon {
             x: center.x + cos(angle) * needleLength,
             y: center.y + sin(angle) * needleLength
         )
-        let needleColor = colorMode == .trafficLight ? statusColor(for: remainingPercent) : .labelColor
+        let needleColor = colorMode == .trafficLight ? UsageIndicatorColor.nsColor(for: remainingPercent) : .labelColor
 
         context.setStrokeColor(needleColor.cgColor)
         context.setLineWidth(1.8)
@@ -106,13 +121,6 @@ private enum MenuBarGaugeIcon {
         context.strokePath()
     }
 
-    private static func statusColor(for remainingPercent: Double) -> NSColor {
-        switch remainingPercent {
-        case 0..<20: return .systemRed
-        case 20..<50: return .systemYellow
-        default: return .systemGreen
-        }
-    }
 }
 
 private enum ArchetipiDigitaliLogo {
@@ -145,6 +153,7 @@ struct GPTUsageMenuApp: App {
                 if indicatorStyle == .percentage {
                     Text(store.menuBarPercentText)
                         .monospacedDigit()
+                        .foregroundStyle(menuBarPercentColor)
                 } else {
                     Image(nsImage: MenuBarGaugeIcon.image(
                         remainingPercent: store.preferredWindow?.remainingPercent,
@@ -164,6 +173,16 @@ struct GPTUsageMenuApp: App {
 
     private var gaugeColorMode: GaugeColorMode {
         GaugeColorMode(rawValue: menuBarGaugeColorMode) ?? .trafficLight
+    }
+
+    private var menuBarPercentColor: Color {
+        guard
+            gaugeColorMode == .trafficLight,
+            let remainingPercent = store.preferredWindow?.remainingPercent
+        else {
+            return .primary
+        }
+        return UsageIndicatorColor.swiftUIColor(for: remainingPercent)
     }
 }
 
@@ -317,11 +336,9 @@ private struct UsageMenuView: View {
                 .toggleStyle(.switch)
                 .controlSize(.small)
 
-            if indicatorStyle == .gauge {
-                Toggle("Colori", isOn: showsGaugeColors)
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
-            }
+            Toggle("Colori", isOn: showsGaugeColors)
+                .toggleStyle(.switch)
+                .controlSize(.small)
 
             Spacer()
         }
@@ -362,6 +379,7 @@ private struct UsageMenuView: View {
 
 private struct UsageWindowRow: View {
     let window: UsageWindow
+    @AppStorage("menuBarGaugeColorMode") private var menuBarGaugeColorMode = GaugeColorMode.trafficLight.rawValue
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
@@ -372,6 +390,7 @@ private struct UsageWindowRow: View {
                 Text("\(window.remainingPercentText) rimasto")
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
+                    .foregroundStyle(percentageColor)
             }
 
             ProgressView(value: window.remainingPercent, total: 100)
@@ -388,10 +407,16 @@ private struct UsageWindowRow: View {
     }
 
     private var progressColor: Color {
-        switch window.remainingPercent {
-        case 0..<20: return .red
-        case 20..<40: return .orange
-        default: return .accentColor
-        }
+        guard colorMode == .trafficLight else { return .accentColor }
+        return UsageIndicatorColor.swiftUIColor(for: window.remainingPercent)
+    }
+
+    private var percentageColor: Color {
+        guard colorMode == .trafficLight else { return .primary }
+        return UsageIndicatorColor.swiftUIColor(for: window.remainingPercent)
+    }
+
+    private var colorMode: GaugeColorMode {
+        GaugeColorMode(rawValue: menuBarGaugeColorMode) ?? .trafficLight
     }
 }

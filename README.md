@@ -25,7 +25,7 @@ Al primo avvio seleziona **Accedi con ChatGPT**. Il browser completa il flusso u
 
 Le quote vengono aggiornate ogni cinque minuti, all’avvio e su richiesta. La percentuale nella barra indica la quota primaria `codex`; il pannello mostra anche eventuali finestre o modelli aggiuntivi restituiti dall’account.
 
-Sotto le quote, il pannello offre lo switch **Lancetta** per scegliere fra percentuale precisa e indicatore ad ago. Quando la lancetta è attiva compare lo switch **Colori**, che abilita le soglie verde, giallo e rosso; disattivandolo la lancetta è monocromatica.
+Sotto le quote, il pannello offre lo switch **Lancetta** per scegliere fra percentuale precisa e indicatore a tachimetro. Lo switch **Colori** è sempre disponibile: abilita le soglie verde (67–100%), giallo (34–66%) e rosso (0–33%) sia per il tachimetro sia per le percentuali; disattivandolo l’indicatore è monocromatico.
 
 ## Sorgente dati
 
