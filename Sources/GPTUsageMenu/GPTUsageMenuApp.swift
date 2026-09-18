@@ -154,6 +154,7 @@ private enum ArchetipiDigitaliLogo {
 
 @main
 struct GPTUsageMenuApp: App {
+    @Environment(\.colorScheme) private var colorScheme
     @StateObject private var store = UsageStore()
     @AppStorage("menuBarIndicatorStyle") private var menuBarIndicatorStyle = MenuBarIndicatorStyle.percentage.rawValue
     @AppStorage("menuBarGaugeColorMode") private var menuBarGaugeColorMode = GaugeColorMode.trafficLight.rawValue
@@ -163,32 +164,8 @@ struct GPTUsageMenuApp: App {
             UsageMenuView(store: store)
                 .frame(width: 330)
         } label: {
-            HStack(spacing: 3) {
-                Image(nsImage: MenuBarChatGPTIcon.image)
-                    .renderingMode(.template)
-                if indicatorStyle == .percentage {
-                    if gaugeColorMode == .trafficLight,
-                       let remainingPercent = store.preferredWindow?.remainingPercent {
-                        Image(nsImage: MenuBarPercentIcon.image(
-                            text: store.menuBarPercentText,
-                            remainingPercent: remainingPercent
-                        ))
-                        .renderingMode(.original)
-                    } else {
-                        Text(store.menuBarPercentText)
-                            .monospacedDigit()
-                    }
-                } else {
-                    Image(nsImage: MenuBarGaugeIcon.image(
-                        remainingPercent: store.preferredWindow?.remainingPercent,
-                        colorMode: gaugeColorMode
-                    ))
-                    .renderingMode(gaugeColorMode == .monochrome ? .template : .original)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 24, height: 20)
-                }
-            }
+            Image(nsImage: statusImage)
+            .renderingMode(gaugeColorMode == .monochrome ? .template : .original)
             .accessibilityLabel(store.menuBarTitle)
         }
         .menuBarExtraStyle(.window)
@@ -196,6 +173,37 @@ struct GPTUsageMenuApp: App {
 
     private var indicatorStyle: MenuBarIndicatorStyle {
         MenuBarIndicatorStyle(rawValue: menuBarIndicatorStyle) ?? .percentage
+    }
+
+    // MenuBarExtra extracts a single image from its label. Compose the entire
+    // status item first so the second image cannot be discarded by SwiftUI.
+    private var statusImage: NSImage {
+        let foreground: NSColor = colorScheme == .dark ? .white : .black
+        let remaining = store.preferredWindow?.remainingPercent
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .semibold),
+            .foregroundColor: gaugeColorMode == .trafficLight
+                ? remaining.map(UsageIndicatorColor.nsColor(for:)) ?? foreground : foreground
+        ]
+        let text = store.menuBarPercentText as NSString
+        let textSize = text.size(withAttributes: attributes)
+        let gauge = indicatorStyle == .gauge && remaining != nil
+        let size = NSSize(width: 25 + (gauge ? 24 : ceil(textSize.width)), height: 22)
+        let image = NSImage(size: size)
+        image.lockFocus()
+        let logoRect = NSRect(x: 0, y: 0, width: 22, height: 22)
+        MenuBarChatGPTIcon.image.draw(in: logoRect)
+        foreground.setFill()
+        logoRect.fill(using: .sourceIn)
+        if gauge {
+            MenuBarGaugeIcon.image(remainingPercent: remaining, colorMode: gaugeColorMode)
+                .draw(in: NSRect(x: 25, y: 1, width: 24, height: 20))
+        } else {
+            text.draw(at: NSPoint(x: 25, y: floor((22 - textSize.height) / 2)), withAttributes: attributes)
+        }
+        image.unlockFocus()
+        image.isTemplate = gaugeColorMode == .monochrome
+        return image
     }
 
     private var gaugeColorMode: GaugeColorMode {
