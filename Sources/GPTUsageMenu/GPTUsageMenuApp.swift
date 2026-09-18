@@ -193,7 +193,9 @@ struct GPTUsageMenuApp: App {
         image.lockFocus()
         let logoRect = NSRect(x: 0, y: 0, width: 22, height: 22)
         MenuBarChatGPTIcon.image.draw(in: logoRect)
-        foreground.setFill()
+        // Colored status images bypass macOS template tinting; keep the logo
+        // white regardless of the popover's (potentially light) appearance.
+        (gaugeColorMode == .trafficLight ? NSColor.white : foreground).setFill()
         logoRect.fill(using: .sourceIn)
         if gauge {
             MenuBarGaugeIcon.image(remainingPercent: remaining, colorMode: gaugeColorMode)
