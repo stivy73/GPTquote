@@ -35,3 +35,9 @@ L’app avvia localmente `codex app-server` tramite `stdio`, esegue l’handshak
 - `account/rateLimits/updated` per gli aggiornamenti notificati dal servizio.
 
 Non usa chiavi API, cookie del browser o endpoint ChatGPT privati.
+
+## Credits
+
+GPTquote è sviluppata da **Michele Stival** per **Archetipi Digitali**.
+
+- Sito: [archetipi-digitali.it](https://www.archetipi-digitali.it)

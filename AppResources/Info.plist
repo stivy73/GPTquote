@@ -10,6 +10,8 @@
     <string>it.stivy.GPTUsageMenu</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>© Michele Stival · Archetipi Digitali</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleName</key>
