@@ -25,26 +25,6 @@ private enum UsageIndicatorColor {
     }
 }
 
-private enum MenuBarChatGPTIcon {
-    static let image: NSImage = {
-        let fallback = NSImage(systemSymbolName: "circle.hexagongrid", accessibilityDescription: "ChatGPT")!
-        guard
-            let url = Bundle.main.url(forResource: "MenuBarChatGPT", withExtension: "png"),
-            let source = NSImage(contentsOf: url)
-        else {
-            fallback.isTemplate = true
-            return fallback
-        }
-
-        let image = NSImage(size: NSSize(width: 22, height: 22))
-        image.lockFocus()
-        source.draw(in: NSRect(x: 0, y: 0, width: 22, height: 22))
-        image.unlockFocus()
-        image.isTemplate = true
-        return image
-    }()
-}
-
 private enum MenuBarGaugeIcon {
     static func image(remainingPercent: Double?, colorMode: GaugeColorMode) -> NSImage {
         guard let remainingPercent else {
@@ -170,8 +150,7 @@ struct GPTUsageMenuApp: App {
         MenuBarIndicatorStyle(rawValue: menuBarIndicatorStyle) ?? .percentage
     }
 
-    // MenuBarExtra extracts a single image from its label. Compose the entire
-    // status item first so the second image cannot be discarded by SwiftUI.
+    // Render the selected indicator as one native image for MenuBarExtra.
     private var statusImage: NSImage {
         let foreground: NSColor = colorScheme == .dark ? .white : .black
         let remaining = store.preferredWindow?.remainingPercent
@@ -183,20 +162,14 @@ struct GPTUsageMenuApp: App {
         let text = store.menuBarPercentText as NSString
         let textSize = text.size(withAttributes: attributes)
         let gauge = indicatorStyle == .gauge && remaining != nil
-        let size = NSSize(width: 25 + (gauge ? 24 : ceil(textSize.width)), height: 22)
+        let size = NSSize(width: gauge ? 24 : ceil(textSize.width), height: 22)
         let image = NSImage(size: size)
         image.lockFocus()
-        let logoRect = NSRect(x: 0, y: 0, width: 22, height: 22)
-        MenuBarChatGPTIcon.image.draw(in: logoRect)
-        // Colored status images bypass macOS template tinting; keep the logo
-        // white regardless of the popover's (potentially light) appearance.
-        (gaugeColorMode == .trafficLight ? NSColor.white : foreground).setFill()
-        logoRect.fill(using: .sourceIn)
         if gauge {
             MenuBarGaugeIcon.image(remainingPercent: remaining, colorMode: gaugeColorMode)
-                .draw(in: NSRect(x: 25, y: 1, width: 24, height: 20))
+                .draw(in: NSRect(x: 0, y: 1, width: 24, height: 20))
         } else {
-            text.draw(at: NSPoint(x: 25, y: floor((22 - textSize.height) / 2)), withAttributes: attributes)
+            text.draw(at: NSPoint(x: 0, y: floor((22 - textSize.height) / 2)), withAttributes: attributes)
         }
         image.unlockFocus()
         image.isTemplate = gaugeColorMode == .monochrome
